@@ -57,8 +57,34 @@ export async function onRequest(context) {
         };
     }
 
+    // Helper Konversi Waktu Baris Log (Anti-Null untuk Data Scanner)
+    function formatWaktuLog(row) {
+        if (row.waktu && String(row.waktu).trim() !== "") {
+            return String(row.waktu).trim();
+        }
+        if (row.created_at) {
+            const d = new Date(new Date(row.created_at).toLocaleString("en-US", { timeZone: "Asia/Makassar" }));
+            if (!isNaN(d.getTime())) {
+                const dd = String(d.getDate()).padStart(2, "0");
+                const mm = String(d.getMonth() + 1).padStart(2, "0");
+                const yyyy = d.getFullYear();
+                const hh = String(d.getHours()).padStart(2, "0");
+                const min = String(d.getMinutes()).padStart(2, "0");
+                const ss = String(d.getSeconds()).padStart(2, "0");
+                return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
+            }
+        }
+        if (row.tanggal) {
+            const parts = String(row.tanggal).split("-");
+            if (parts.length === 3) {
+                return `${parts[2]}/${parts[1]}/${parts[0]} 07:00:00`;
+            }
+            return String(row.tanggal);
+        }
+        return getWitaNow().waktuFormatted;
+    }
+
     try {
-        // Parsing body yang aman dari error crash
         let body = {};
         if (request.method === "POST") {
             try {
@@ -69,12 +95,12 @@ export async function onRequest(context) {
         }
         const aksi = body.aksi || body.action || "get_data";
 
-        // 1. AMBIL SEMUA DATA
+        // 1. AMBIL SEMUA DATA (DENGAN FALLBACK KOLOM WAKTU & TANGGAL)
         if (aksi === "get_data") {
             const [siswaData, guruData, absenData] = await Promise.all([
                 sbFetch("siswa?select=nis,nama,kelas&order=kelas.asc,nama.asc"),
                 sbFetch("guru?select=nip,nama,rfid&order=nama.asc"),
-                sbFetch("log_absen?select=id,waktu,nama,nis_nip,kelas,status,tipe,pulang&order=id.asc")
+                sbFetch("log_absen?select=*&order=id.asc")
             ]);
 
             return new Response(JSON.stringify({
@@ -82,12 +108,18 @@ export async function onRequest(context) {
                 siswa: [["NIS", "Nama", "Kelas"], ...siswaData.map(s => [s.nis, s.nama, s.kelas])],
                 guru: [["NIP", "Nama", "RFID"], ...guruData.map(g => [g.nip, g.nama, g.rfid || "-"])],
                 absen: [["Waktu", "Nama", "NIS/NIP", "Kelas/Jabatan", "Status", "Tipe", "Pulang"], ...absenData.map(a => [
-                    a.waktu, a.nama, a.nis_nip, a.kelas, a.status || "Masuk", a.tipe || "Siswa", a.pulang || ""
+                    formatWaktuLog(a),
+                    a.nama || "-",
+                    a.nis_nip || a.nis || a.nip || "-",
+                    a.kelas || a.kelas_jabatan || "-",
+                    a.status || "Masuk",
+                    a.tipe || (a.kelas === "Guru" ? "Guru" : "Siswa"),
+                    a.pulang || ""
                 ])]
             }), { headers: corsHeaders });
         }
 
-        // 2. IMPORT SISWA (UNTUK SIMPAN ANTREAN)
+        // 2. IMPORT SISWA
         if (aksi === "import_siswa") {
             const list = (body.siswaList || []).map(s => ({
                 nis: String(s.nis || "").trim(),
@@ -129,7 +161,7 @@ export async function onRequest(context) {
             const nama = String(body.nama || "").trim();
             const status = String(body.status || "Izin").trim();
             const timestamp = String(body.timestamp || getWitaNow().waktuFormatted).trim();
-            const tglPrefix = timestamp.split(" ")[0]; 
+            const tglPrefix = timestamp.split(" ")[0];
             const jamPart = (timestamp.split(" ")[1] || "07:00:00").substring(0, 5);
             const [dd, mm, yyyy] = tglPrefix.split("/");
             const tanggalISO = `${yyyy}-${mm}-${dd}`;
@@ -144,7 +176,7 @@ export async function onRequest(context) {
             }
 
             const existing = await sbFetch(
-                `log_absen?nis_nip=eq.${encodeURIComponent(nis)}&waktu=like.${encodeURIComponent(tglPrefix)}*&select=*&order=id.desc&limit=1`
+                `log_absen?nis_nip=eq.${encodeURIComponent(nis)}&or=(waktu.like.${encodeURIComponent(tglPrefix)}*,tanggal.eq.${encodeURIComponent(tanggalISO)})&select=*&order=id.desc&limit=1`
             );
 
             if (status === "Pulang") {
@@ -191,7 +223,36 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ status: "success", message: `Presensi ${status} untuk ${nama} berhasil disimpan!` }), { headers: corsHeaders });
         }
 
-        // 5. RESTORE & HAPUS
+        // 5. AKSI HAPUS DATA SISWA & GURU
+        if (aksi === "hapus_siswa") {
+            const nis = String(body.nis || "").trim();
+            if (nis) await sbFetch(`siswa?nis=eq.${encodeURIComponent(nis)}`, { method: "DELETE" });
+            return new Response(JSON.stringify({ status: "success" }), { headers: corsHeaders });
+        }
+
+        if (aksi === "hapus_kelas_siswa") {
+            const kelas = String(body.kelas || "").trim();
+            if (kelas) await sbFetch(`siswa?kelas=eq.${encodeURIComponent(kelas)}`, { method: "DELETE" });
+            return new Response(JSON.stringify({ status: "success" }), { headers: corsHeaders });
+        }
+
+        if (aksi === "hapus_semua_siswa") {
+            await sbFetch("siswa?nis=neq.___KOSONG___", { method: "DELETE" });
+            return new Response(JSON.stringify({ status: "success" }), { headers: corsHeaders });
+        }
+
+        if (aksi === "hapus_guru") {
+            const nip = String(body.nip || "").trim();
+            if (nip) await sbFetch(`guru?nip=eq.${encodeURIComponent(nip)}`, { method: "DELETE" });
+            return new Response(JSON.stringify({ status: "success" }), { headers: corsHeaders });
+        }
+
+        if (aksi === "hapus_semua_guru") {
+            await sbFetch("guru?nip=neq.___KOSONG___", { method: "DELETE" });
+            return new Response(JSON.stringify({ status: "success" }), { headers: corsHeaders });
+        }
+
+        // 6. RESTORE & HAPUS SEMUA DATABASE
         if (aksi === "hapus_semua_data") {
             await Promise.all([
                 sbFetch("siswa?nis=neq.___KOSONG___", { method: "DELETE" }),
