@@ -2020,48 +2020,93 @@ const URL_WEB_APP = '/api';
             });
         }
 
-        function loadDataFromDatabase(isSilent = false) {
-            const refreshIcon = document.getElementById('refreshIcon');
-            const syncText = document.getElementById('syncStatusText');
-            if(refreshIcon) refreshIcon.classList.add('fa-spin');
-            if(syncText && !isSilent) {
-                syncText.innerText = 'Menyinkronkan data...';
-                syncText.className = 'text-[11px] text-amber-400 font-medium mt-0.5';
-            }
+       function loadDataFromDatabase(isSilent = false) {
+    const refreshIcon = document.getElementById('refreshIcon');
+    const syncText = document.getElementById('syncStatusText');
+    if(refreshIcon) refreshIcon.classList.add('fa-spin');
+    if(syncText && !isSilent) {
+        syncText.innerText = 'Menyinkronkan Supabase...';
+        syncText.className = 'text-[11px] text-amber-400 font-medium mt-0.5';
+    }
 
-            fetch(URL_WEB_APP, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ aksi: 'get_data' }) 
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    masterDataSiswa = data.siswa || []; 
-                    masterDataGuru = data.guru || [];
-                    masterDataAbsen = data.absen || [];
-
-                    simpanCacheLokal();
-                    perbaruiSeluruhTampilanUI();
-
-                    if(syncText) {
-                        syncText.innerText = 'Data Terkini (Online)';
-                        syncText.className = 'text-[11px] text-emerald-400 font-medium mt-0.5';
-                    }
-                    const preloadDot = document.getElementById('loginPreloadDot');
-                    const preloadStatus = document.getElementById('loginPreloadStatus');
-                    if (preloadDot) preloadDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-                    if (preloadStatus) preloadStatus.innerText = `Database siap (${totalSiswaDatabase} Siswa, ${totalGuruDatabase} Guru)`;
+    fetch(URL_WEB_APP, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aksi: 'get_data' }) 
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'success') {
+            // Konversi Array of Objects dari Supabase ke format tabel UI
+            const formatSiswa = (list) => {
+                const header = ['NIS', 'Nama', 'Kelas'];
+                if (!Array.isArray(list) || list.length === 0) return [header];
+                if (Array.isArray(list[0])) {
+                    return String(list[0][0]).toLowerCase() === 'nis' ? list : [header, ...list];
                 }
-            })
-            .catch(err => {
-                console.error(err);
-                if (!isSilent) showToast('Gagal memuat data terbaru dari server.', 'error');
-            })
-            .finally(() => {
-                if(refreshIcon) refreshIcon.classList.remove('fa-spin');
-            });
+                return [header, ...list.map(item => [
+                    item.nis ?? item.NIS ?? '',
+                    item.nama ?? item.Nama ?? '',
+                    item.kelas ?? item.Kelas ?? ''
+                ])];
+            };
+
+            const formatGuru = (list) => {
+                const header = ['NIP', 'Nama', 'RFID'];
+                if (!Array.isArray(list) || list.length === 0) return [header];
+                if (Array.isArray(list[0])) {
+                    return String(list[0][0]).toLowerCase() === 'nip' ? list : [header, ...list];
+                }
+                return [header, ...list.map(item => [
+                    item.nip ?? item.NIP ?? '',
+                    item.nama ?? item.Nama ?? '',
+                    item.rfid ?? item.RFID ?? ''
+                ])];
+            };
+
+            const formatAbsen = (list) => {
+                const header = ['Waktu', 'Nama', 'NIS/NIP', 'Kelas/Jabatan', 'Status', 'Tipe', 'Pulang'];
+                if (!Array.isArray(list) || list.length === 0) return [header];
+                if (Array.isArray(list[0])) {
+                    const col0 = String(list[0][0] || '').toLowerCase();
+                    return (col0 === 'waktu' || col0 === 'timestamp') ? list : [header, ...list];
+                }
+                return [header, ...list.map(item => [
+                    item.waktu ?? item.timestamp ?? item.created_at ?? '',
+                    item.nama ?? item.Nama ?? '',
+                    item.nis ?? item.nip ?? item.nis_nip ?? item.id_peserta ?? '',
+                    item.kelas ?? item.jabatan ?? item.kelas_jabatan ?? '-',
+                    item.status ?? item.status_masuk ?? 'Masuk',
+                    item.tipe ?? item.kategori ?? (item.kelas === 'Guru' ? 'Guru' : 'Siswa'),
+                    item.pulang ?? item.status_pulang ?? item.waktu_pulang ?? ''
+                ])];
+            };
+
+            masterDataSiswa = formatSiswa(data.siswa); 
+            masterDataGuru = formatGuru(data.guru);
+            masterDataAbsen = formatAbsen(data.absen || data.log_absen || data.kehadiran);
+
+            simpanCacheLokal();
+            perbaruiSeluruhTampilanUI();
+
+            if(syncText) {
+                syncText.innerText = 'Terhubung ke Supabase';
+                syncText.className = 'text-[11px] text-emerald-400 font-medium mt-0.5';
+            }
+            const preloadDot = document.getElementById('loginPreloadDot');
+            const preloadStatus = document.getElementById('loginPreloadStatus');
+            if (preloadDot) preloadDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+            if (preloadStatus) preloadStatus.innerText = `Supabase siap (${totalSiswaDatabase} Siswa, ${totalGuruDatabase} Guru)`;
         }
+    })
+    .catch(err => {
+        console.error(err);
+        if (!isSilent) showToast('Gagal memuat data dari Supabase.', 'error');
+    })
+    .finally(() => {
+        if(refreshIcon) refreshIcon.classList.remove('fa-spin');
+    });
+}
 
         function bersihkanID(val) {
             if (val === null || val === undefined) return '';
