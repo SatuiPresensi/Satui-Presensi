@@ -3554,44 +3554,63 @@ const URL_WEB_APP = '/api';
             }});
         });
         
-        async function simpanKeDatabase() {
-            const btn = document.getElementById('btnSave'); 
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...'; 
-            btn.disabled = true;
+async function simpanKeDatabase() {
+    const btn = document.getElementById('btnSave'); 
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...'; 
+    btn.disabled = true;
 
+    try {
+        if (globalSiswaList.length > 0) {
+            const resSiswa = await fetch(URL_WEB_APP, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ aksi: 'import_siswa', siswaList: globalSiswaList }) 
+            });
+            const textRes = await resSiswa.text();
+            let dataSiswa;
             try {
-                if (globalSiswaList.length > 0) {
-                    const resSiswa = await fetch(URL_WEB_APP, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ aksi: 'import_siswa', siswaList: globalSiswaList }) 
-                    });
-                    const dataSiswa = await resSiswa.json();
-                    if (dataSiswa.status !== 'success') throw new Error(dataSiswa.message || 'Gagal menyimpan data siswa.');
-                    globalSiswaList = [];
-                }
-
-                if (globalGuruList.length > 0) {
-                    const resGuru = await fetch(URL_WEB_APP, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ aksi: 'import_guru', guruList: globalGuruList }) 
-                    });
-                    const dataGuru = await resGuru.json();
-                    if (dataGuru.status !== 'success') throw new Error(dataGuru.message || 'Gagal menyimpan data guru.');
-                    globalGuruList = [];
-                }
-
-                showToast('Berhasil menyimpan seluruh antrean ke Google Spreadsheet!', 'success');
-                updatePendingSaveBadge();
-                refreshData();
-            } catch (err) {
-                showToast('Gagal menyimpan: ' + err.message, 'error');
-            } finally { 
-                btn.innerHTML = originalHTML; btn.disabled = false; updatePendingSaveBadge();
+                dataSiswa = JSON.parse(textRes);
+            } catch (e) {
+                throw new Error("Respon server bukan JSON: " + textRes.substring(0, 100));
             }
+            if (!resSiswa.ok || dataSiswa.status !== 'success') {
+                throw new Error(dataSiswa.message || 'Gagal menyimpan data siswa.');
+            }
+            globalSiswaList = [];
         }
+
+        if (globalGuruList.length > 0) {
+            const resGuru = await fetch(URL_WEB_APP, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ aksi: 'import_guru', guruList: globalGuruList }) 
+            });
+            const textResG = await resGuru.text();
+            let dataGuru;
+            try {
+                dataGuru = JSON.parse(textResG);
+            } catch (e) {
+                throw new Error("Respon server bukan JSON: " + textResG.substring(0, 100));
+            }
+            if (!resGuru.ok || dataGuru.status !== 'success') {
+                throw new Error(dataGuru.message || 'Gagal menyimpan data guru.');
+            }
+            globalGuruList = [];
+        }
+
+        showToast('Berhasil menyimpan seluruh antrean ke database Supabase!', 'success');
+        updatePendingSaveBadge();
+        refreshData();
+    } catch (err) {
+        showToast('Gagal menyimpan: ' + err.message, 'error');
+        console.error("Detail Error Simpan Antrean:", err);
+    } finally { 
+        btn.innerHTML = originalHTML; 
+        btn.disabled = false; 
+        updatePendingSaveBadge(); 
+    }
+}
     </script>
 </body>
 </html>
