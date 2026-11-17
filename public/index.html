@@ -108,11 +108,11 @@
                 <div class="relative z-10 mt-8 pt-6 border-t border-white/15 space-y-3">
                     <div class="flex items-center gap-3 text-xs text-indigo-100">
                         <span class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-emerald-300"><i class="fa-solid fa-bolt"></i></span>
-                        <span>Sinkronisasi Real-Time Google Sheets</span>
+                        <span>Sinkronisasi Real-Time Cloud Supabase</span>
                     </div>
                     <div class="flex items-center gap-3 text-xs text-indigo-100">
                         <span class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-amber-300"><i class="fa-solid fa-print"></i></span>
-                        <span>Cetak ID Card & Rekap Otomatis (Excel/PDF)</span>
+                        <span>Cetak ID Card & Rekap Resmi (Excel/PDF)</span>
                     </div>
                     <p class="text-[11px] text-indigo-200/60 pt-2">NPSN: 30303610 &bull; Tanah Bumbu, Kalimantan Selatan</p>
                 </div>
@@ -178,7 +178,7 @@
                         <span id="loginPreloadDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
                         <span id="loginPreloadStatus">Menyiapkan data di latar belakang...</span>
                     </span>
-                    <span>v3.0 Enterprise</span>
+                    <span>v3.2 Enterprise</span>
                 </div>
             </div>
         </div>
@@ -358,10 +358,10 @@
                     <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-400/20 mb-3">
-                                <i class="fa-solid fa-bolt text-amber-400"></i> Pemantauan Real-Time
+                                <i class="fa-solid fa-bolt text-amber-400"></i> Pemantauan Real-Time &bull; Batas Masuk 07:25 WITA
                             </span>
                             <h3 class="text-xl md:text-2xl font-extrabold tracking-tight">Ringkasan Presensi Hari Ini</h3>
-                            <p class="text-xs md:text-sm text-slate-300 mt-1 max-w-xl">Pantau statistik kehadiran Masuk (Kolom E), Pulang (Kolom G), Izin, dan Sakit secara langsung, kelola kartu QR/RFID, dan unduh laporan rekapitulasi berkala.</p>
+                            <p class="text-xs md:text-sm text-slate-300 mt-1 max-w-xl">Pantau statistik kehadiran Masuk/Terlambat (Kolom E), Pulang (Kolom G), Izin, dan Sakit secara langsung, kelola kartu QR/RFID, dan cetak laporan resmi berpengesahan.</p>
                         </div>
                         <div class="flex flex-wrap gap-2.5">
                             <button onclick="toggleModalInputManual()" class="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white border border-white/15 px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all">
@@ -473,7 +473,7 @@
             </div>
 
             <!-- ========================================================= -->
-            <!-- TAB 2: LOG ABSEN (KOLOM E MASUK & KOLOM G PULANG)         -->
+            <!-- TAB 2: LOG ABSEN (KOLOM E MASUK/TERLAMBAT & KOLOM G PULANG)-->
             <!-- ========================================================= -->
             <div id="tab-logabsen" class="hidden space-y-6 tab-animate">
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
@@ -483,7 +483,7 @@
                                 <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm"><i class="fa-solid fa-clock-rotate-left"></i></span>
                                 Riwayat Aktivitas Presensi
                             </h3>
-                            <p class="text-xs text-slate-500 mt-1">Status Masuk/Izin/Sakit tercatat di Kolom E &bull; Status & Jam Pulang tercatat di Kolom G</p>
+                            <p class="text-xs text-slate-500 mt-1">Status Masuk/Terlambat/Izin/Sakit di Kolom E &bull; Status Pulang (Sen-Kam 14:30, Jum 11:00) di Kolom G</p>
                         </div>
                         
                         <div class="flex flex-col sm:flex-row flex-wrap gap-2.5 w-full xl:w-auto action-tools">
@@ -504,7 +504,8 @@
 
                             <select id="filterStatusLog" onchange="filterLogAbsen()" class="border border-slate-200 rounded-xl px-3.5 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white w-full sm:w-auto font-semibold text-slate-700" title="Filter Status Kehadiran">
                                 <option value="Semua">Semua Status</option>
-                                <option value="Masuk">Status: Masuk</option>
+                                <option value="Masuk">Status: Masuk (Tepat Waktu)</option>
+                                <option value="Terlambat">Status: Terlambat (&gt; 07:25)</option>
                                 <option value="Pulang">Sudah Scan Pulang (Kol G)</option>
                                 <option value="Belum Pulang">Belum Scan Pulang</option>
                                 <option value="Izin">Status: Izin</option>
@@ -543,7 +544,7 @@
             </div>
 
             <!-- ========================================================= -->
-            <!-- TAB 3: REKAP & UNDUH ABSENSI (SIMBOL & DETAIL JAM)        -->
+            <!-- TAB 3: REKAP & UNDUH ABSENSI (DENGAN PENGESAHAN RESMI)     -->
             <!-- ========================================================= -->
             <div id="tab-rekap" class="hidden space-y-6 tab-animate">
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200/80 space-y-5">
@@ -553,7 +554,7 @@
                                 <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm"><i class="fa-solid fa-calendar-check"></i></span>
                                 Generator Rekapitulasi Kehadiran
                             </h3>
-                            <p class="text-xs text-slate-500 mt-1">Susun matriks kehadiran Siswa atau Guru lengkap dengan opsi Simbol (✓/I/S) atau Detail Jam Masuk & Pulang (Kolom G)</p>
+                            <p class="text-xs text-slate-500 mt-1">Dilengkapi Kop Sekolah & Lembar Pengesahan Kepala Sekolah (Sumarna, S.Pd.) otomatis pada cetakan PDF</p>
                         </div>
                         <div class="flex flex-wrap gap-2.5 w-full md:w-auto">
                             <button onclick="toggleModalInputManual()" class="flex-1 md:flex-initial bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold px-4 py-2.5 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition-all">
@@ -563,7 +564,7 @@
                                 <i class="fa-solid fa-file-excel"></i> Unduh Excel (.xlsx)
                             </button>
                             <button onclick="exportRekapPDF()" class="flex-1 md:flex-initial bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2.5 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition-all shadow-sm shadow-rose-600/20">
-                                <i class="fa-solid fa-file-pdf"></i> Cetak PDF (.pdf)
+                                <i class="fa-solid fa-file-pdf"></i> Cetak PDF Resmi (.pdf)
                             </button>
                         </div>
                     </div>
@@ -630,6 +631,25 @@
                             </select>
                         </div>
                     </div>
+
+                    <!-- Pengaturan Penandatangan Pendamping (Wali Kelas / Koordinator) -->
+                    <div class="pt-3 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-4 items-center bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/60">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                <i class="fa-solid fa-signature"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-800">Blok Pengesahan Cetakan PDF</p>
+                                <p class="text-[11px] text-slate-500">Kepala Sekolah: <strong>Sumarna, S.Pd.</strong> (Otomatis)</p>
+                            </div>
+                        </div>
+                        <div>
+                            <input type="text" id="rekapNamaWali" placeholder="Nama Wali Kelas / Koordinator (Opsional)" class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-indigo-500 bg-white font-medium text-slate-700">
+                        </div>
+                        <div>
+                            <input type="text" id="rekapNipWali" placeholder="NIP Wali Kelas / Koordinator (Opsional)" class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-indigo-500 bg-white font-mono-code text-slate-700">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Ringkasan Statistik Rekap -->
@@ -691,7 +711,7 @@
             </div>
 
             <!-- ========================================================= -->
-            <!-- TAB 4: DATA SISWA & QR (DILENGKAPI HAPUS PERSISWA & SEMUA) -->
+            <!-- TAB 4: DATA SISWA & QR                                    -->
             <!-- ========================================================= -->
             <div id="tab-siswa" class="hidden space-y-6 tab-animate">
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
@@ -1029,7 +1049,7 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- MODAL KONFIRMASI TINDAKAN PENTING (HAPUS / RESTORE)        -->
+    <!-- MODAL KONFIRMASI TINDAKAN PENTING (HAPUS / RESTORE)       -->
     <!-- ========================================================= -->
     <div id="confirmModal" class="hidden fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full transform transition-all">
@@ -1148,7 +1168,7 @@
     </div>
 
     <script>
-const URL_WEB_APP = '/api';
+        const URL_WEB_APP = '/api';
         const CACHE_KEY = 'eduabsen_admin_cache_v1';
         const AUTH_SESSION_KEY = 'eduabsen_auth_session_v1';
 
@@ -1271,7 +1291,7 @@ const URL_WEB_APP = '/api';
             // 1. MUAT INSTAN DARI CACHE LOKAL
             muatDariCacheLokal();
             
-            // 2. SINKRONISASI LATAR BELAKANG DARI SERVER GOOGLE SHEETS
+            // 2. SINKRONISASI LATAR BELAKANG DARI SERVER SUPABASE
             loadDataFromDatabase(true);
         });
 
@@ -1469,7 +1489,7 @@ const URL_WEB_APP = '/api';
             const btn = document.getElementById('btnSimpanManual');
             const origHTML = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan ke Spreadsheet...`;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan ke Cloud...`;
 
             const [yyyy, mm, dd] = tgl.split('-');
             const formattedTimestamp = `${dd}/${mm}/${yyyy} ${jam}:00`;
@@ -1477,7 +1497,7 @@ const URL_WEB_APP = '/api';
             try {
                 const res = await fetch(URL_WEB_APP, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         aksi: 'absen_manual',
                         nis: targetPeserta.id,
@@ -1488,19 +1508,17 @@ const URL_WEB_APP = '/api';
                 });
                 const resJson = await res.json();
 
-                // WAJIB CEK STATUS DARI SERVER: Jangan tampilkan sukses jika Spreadsheet menolak!
                 if (resJson.status !== 'success') {
-                    throw new Error(resJson.message || 'Gagal menulis data ke Google Spreadsheet.');
+                    throw new Error(resJson.message || 'Gagal menulis data ke server Supabase.');
                 }
 
                 document.getElementById('manualNisNip').value = '';
                 toggleModalInputManual();
                 showToast(resJson.message || `Status ${statusAbsen} untuk ${targetPeserta.nama} berhasil disimpan!`, 'success');
 
-                // Langsung tarik data terbaru dari Google Spreadsheet untuk memastikan 100% sinkron
                 loadDataFromDatabase(false);
             } catch (err) {
-                showToast('Gagal masuk ke Spreadsheet: ' + err.message, 'error');
+                showToast('Gagal menyimpan: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = origHTML;
@@ -1557,7 +1575,7 @@ const URL_WEB_APP = '/api';
             try {
                 await fetch(URL_WEB_APP, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ aksi: 'hapus_siswa', nis: nis, nama: nama })
                 });
             } catch (e) {
@@ -1586,7 +1604,7 @@ const URL_WEB_APP = '/api';
                     try {
                         await fetch(URL_WEB_APP, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ aksi: 'hapus_kelas_siswa', kelas: kelas })
                         });
                     } catch (e) {}
@@ -1600,7 +1618,7 @@ const URL_WEB_APP = '/api';
             }
             bukaConfirmModal(
                 'Hapus Seluruh Data Siswa',
-                `Tindakan ini akan <strong>mengosongkan seluruh daftar siswa (${totalSiswaDatabase} siswa)</strong> dari sistem dan Google Spreadsheet. Sangat disarankan mengunduh <strong>Backup Data</strong> terlebih dahulu.`,
+                `Tindakan ini akan <strong>mengosongkan seluruh daftar siswa (${totalSiswaDatabase} siswa)</strong> dari sistem dan database Supabase. Sangat disarankan mengunduh <strong>Backup Data</strong> terlebih dahulu.`,
                 'Kosongkan Semua Siswa',
                 async () => {
                     await eksekusiHapusSemuaSiswa();
@@ -1621,7 +1639,7 @@ const URL_WEB_APP = '/api';
             try {
                 await fetch(URL_WEB_APP, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ aksi: 'hapus_semua_siswa' })
                 });
             } catch (e) {
@@ -1653,7 +1671,7 @@ const URL_WEB_APP = '/api';
                     try {
                         await fetch(URL_WEB_APP, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ aksi: 'hapus_guru', nip: nip, nama: nama })
                         });
                     } catch (e) {}
@@ -1681,7 +1699,7 @@ const URL_WEB_APP = '/api';
                     try {
                         await fetch(URL_WEB_APP, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ aksi: 'hapus_semua_guru' })
                         });
                     } catch (e) {}
@@ -1709,7 +1727,7 @@ const URL_WEB_APP = '/api';
                     try {
                         await fetch(URL_WEB_APP, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ aksi: 'hapus_semua_data' })
                         });
                     } catch (e) {}
@@ -1725,7 +1743,7 @@ const URL_WEB_APP = '/api';
             const tglStr = formatDateKey(now);
             const payloadBackup = {
                 app: "EduAbsen SMPN 1 Satui",
-                version: "3.0",
+                version: "3.2",
                 exportedAt: now.toISOString(),
                 stats: {
                     totalSiswa: totalSiswaDatabase,
@@ -1846,7 +1864,7 @@ const URL_WEB_APP = '/api';
 
             bukaConfirmModal(
                 'Konfirmasi Import / Restore Semua Data',
-                `Anda akan memulihkan seluruh database dengan mode <strong>${modeTeks}</strong>. Data pada dashboard dan Google Spreadsheet akan diperbarui. Lanjutkan?`,
+                `Anda akan memulihkan seluruh database dengan mode <strong>${modeTeks}</strong>. Data pada dashboard dan Supabase akan diperbarui. Lanjutkan?`,
                 'Mulai Restore Data',
                 async () => {
                     await eksekusiRestoreSemuaData(mode);
@@ -1912,7 +1930,7 @@ const URL_WEB_APP = '/api';
 
                 const res = await fetch(URL_WEB_APP, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         aksi: 'restore_all',
                         mode: mode,
@@ -1923,14 +1941,14 @@ const URL_WEB_APP = '/api';
                 });
                 const resJson = await res.json();
                 if (resJson.status !== 'success') {
-                    throw new Error(resJson.message || 'Gagal sinkronisasi restore_all ke Google Spreadsheet.');
+                    throw new Error(resJson.message || 'Gagal sinkronisasi restore_all ke Supabase.');
                 }
 
                 document.getElementById('inputFileRestoreAll').value = '';
                 document.getElementById('boxPreviewRestore').classList.add('hidden');
                 parsedRestorePayload = null;
 
-                showToast('Seluruh data berhasil di-import dan diperbarui di Google Spreadsheet!', 'success');
+                showToast('Seluruh data berhasil di-import dan diperbarui di Supabase!', 'success');
             } catch (err) {
                 showToast('Gagal memproses import data: ' + err.message, 'error');
             } finally {
@@ -2020,93 +2038,92 @@ const URL_WEB_APP = '/api';
             });
         }
 
-       function loadDataFromDatabase(isSilent = false) {
-    const refreshIcon = document.getElementById('refreshIcon');
-    const syncText = document.getElementById('syncStatusText');
-    if(refreshIcon) refreshIcon.classList.add('fa-spin');
-    if(syncText && !isSilent) {
-        syncText.innerText = 'Menyinkronkan Supabase...';
-        syncText.className = 'text-[11px] text-amber-400 font-medium mt-0.5';
-    }
-
-    fetch(URL_WEB_APP, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ aksi: 'get_data' }) 
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.status === 'success') {
-            // Konversi Array of Objects dari Supabase ke format tabel UI
-            const formatSiswa = (list) => {
-                const header = ['NIS', 'Nama', 'Kelas'];
-                if (!Array.isArray(list) || list.length === 0) return [header];
-                if (Array.isArray(list[0])) {
-                    return String(list[0][0]).toLowerCase() === 'nis' ? list : [header, ...list];
-                }
-                return [header, ...list.map(item => [
-                    item.nis ?? item.NIS ?? '',
-                    item.nama ?? item.Nama ?? '',
-                    item.kelas ?? item.Kelas ?? ''
-                ])];
-            };
-
-            const formatGuru = (list) => {
-                const header = ['NIP', 'Nama', 'RFID'];
-                if (!Array.isArray(list) || list.length === 0) return [header];
-                if (Array.isArray(list[0])) {
-                    return String(list[0][0]).toLowerCase() === 'nip' ? list : [header, ...list];
-                }
-                return [header, ...list.map(item => [
-                    item.nip ?? item.NIP ?? '',
-                    item.nama ?? item.Nama ?? '',
-                    item.rfid ?? item.RFID ?? ''
-                ])];
-            };
-
-            const formatAbsen = (list) => {
-                const header = ['Waktu', 'Nama', 'NIS/NIP', 'Kelas/Jabatan', 'Status', 'Tipe', 'Pulang'];
-                if (!Array.isArray(list) || list.length === 0) return [header];
-                if (Array.isArray(list[0])) {
-                    const col0 = String(list[0][0] || '').toLowerCase();
-                    return (col0 === 'waktu' || col0 === 'timestamp') ? list : [header, ...list];
-                }
-                return [header, ...list.map(item => [
-                    item.waktu ?? item.timestamp ?? item.created_at ?? '',
-                    item.nama ?? item.Nama ?? '',
-                    item.nis ?? item.nip ?? item.nis_nip ?? item.id_peserta ?? '',
-                    item.kelas ?? item.jabatan ?? item.kelas_jabatan ?? '-',
-                    item.status ?? item.status_masuk ?? 'Masuk',
-                    item.tipe ?? item.kategori ?? (item.kelas === 'Guru' ? 'Guru' : 'Siswa'),
-                    item.pulang ?? item.status_pulang ?? item.waktu_pulang ?? ''
-                ])];
-            };
-
-            masterDataSiswa = formatSiswa(data.siswa); 
-            masterDataGuru = formatGuru(data.guru);
-            masterDataAbsen = formatAbsen(data.absen || data.log_absen || data.kehadiran);
-
-            simpanCacheLokal();
-            perbaruiSeluruhTampilanUI();
-
-            if(syncText) {
-                syncText.innerText = 'Terhubung ke Supabase';
-                syncText.className = 'text-[11px] text-emerald-400 font-medium mt-0.5';
+        function loadDataFromDatabase(isSilent = false) {
+            const refreshIcon = document.getElementById('refreshIcon');
+            const syncText = document.getElementById('syncStatusText');
+            if(refreshIcon) refreshIcon.classList.add('fa-spin');
+            if(syncText && !isSilent) {
+                syncText.innerText = 'Menyinkronkan Supabase...';
+                syncText.className = 'text-[11px] text-amber-400 font-medium mt-0.5';
             }
-            const preloadDot = document.getElementById('loginPreloadDot');
-            const preloadStatus = document.getElementById('loginPreloadStatus');
-            if (preloadDot) preloadDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-            if (preloadStatus) preloadStatus.innerText = `Supabase siap (${totalSiswaDatabase} Siswa, ${totalGuruDatabase} Guru)`;
+
+            fetch(URL_WEB_APP, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ aksi: 'get_data' }) 
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    const formatSiswa = (list) => {
+                        const header = ['NIS', 'Nama', 'Kelas'];
+                        if (!Array.isArray(list) || list.length === 0) return [header];
+                        if (Array.isArray(list[0])) {
+                            return String(list[0][0]).toLowerCase() === 'nis' ? list : [header, ...list];
+                        }
+                        return [header, ...list.map(item => [
+                            item.nis ?? item.NIS ?? '',
+                            item.nama ?? item.Nama ?? '',
+                            item.kelas ?? item.Kelas ?? ''
+                        ])];
+                    };
+
+                    const formatGuru = (list) => {
+                        const header = ['NIP', 'Nama', 'RFID'];
+                        if (!Array.isArray(list) || list.length === 0) return [header];
+                        if (Array.isArray(list[0])) {
+                            return String(list[0][0]).toLowerCase() === 'nip' ? list : [header, ...list];
+                        }
+                        return [header, ...list.map(item => [
+                            item.nip ?? item.NIP ?? '',
+                            item.nama ?? item.Nama ?? '',
+                            item.rfid ?? item.RFID ?? ''
+                        ])];
+                    };
+
+                    const formatAbsen = (list) => {
+                        const header = ['Waktu', 'Nama', 'NIS/NIP', 'Kelas/Jabatan', 'Status', 'Tipe', 'Pulang'];
+                        if (!Array.isArray(list) || list.length === 0) return [header];
+                        if (Array.isArray(list[0])) {
+                            const col0 = String(list[0][0] || '').toLowerCase();
+                            return (col0 === 'waktu' || col0 === 'timestamp') ? list : [header, ...list];
+                        }
+                        return [header, ...list.map(item => [
+                            item.waktu ?? item.timestamp ?? item.created_at ?? '',
+                            item.nama ?? item.Nama ?? '',
+                            item.nis ?? item.nip ?? item.nis_nip ?? item.id_peserta ?? '',
+                            item.kelas ?? item.jabatan ?? item.kelas_jabatan ?? '-',
+                            item.status ?? item.status_masuk ?? 'Masuk',
+                            item.tipe ?? item.kategori ?? (item.kelas === 'Guru' ? 'Guru' : 'Siswa'),
+                            item.pulang ?? item.status_pulang ?? item.waktu_pulang ?? ''
+                        ])];
+                    };
+
+                    masterDataSiswa = formatSiswa(data.siswa); 
+                    masterDataGuru = formatGuru(data.guru);
+                    masterDataAbsen = formatAbsen(data.absen || data.log_absen || data.kehadiran);
+
+                    simpanCacheLokal();
+                    perbaruiSeluruhTampilanUI();
+
+                    if(syncText) {
+                        syncText.innerText = 'Terhubung ke Supabase';
+                        syncText.className = 'text-[11px] text-emerald-400 font-medium mt-0.5';
+                    }
+                    const preloadDot = document.getElementById('loginPreloadDot');
+                    const preloadStatus = document.getElementById('loginPreloadStatus');
+                    if (preloadDot) preloadDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                    if (preloadStatus) preloadStatus.innerText = `Supabase siap (${totalSiswaDatabase} Siswa, ${totalGuruDatabase} Guru)`;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                if (!isSilent) showToast('Gagal memuat data dari Supabase.', 'error');
+            })
+            .finally(() => {
+                if(refreshIcon) refreshIcon.classList.remove('fa-spin');
+            });
         }
-    })
-    .catch(err => {
-        console.error(err);
-        if (!isSilent) showToast('Gagal memuat data dari Supabase.', 'error');
-    })
-    .finally(() => {
-        if(refreshIcon) refreshIcon.classList.remove('fa-spin');
-    });
-}
 
         function bersihkanID(val) {
             if (val === null || val === undefined) return '';
@@ -2164,7 +2181,7 @@ const URL_WEB_APP = '/api';
         }
 
         // =========================================================================
-        // TABEL LOG KEHADIRAN (MEMBACA KOLOM E UNTUK MASUK & KOLOM G UNTUK PULANG)
+        // TABEL LOG KEHADIRAN (MEMBACA KOLOM E MASUK/TERLAMBAT & KOLOM G PULANG)
         // =========================================================================
         function renderLogAbsen(dataAbsen) {
             const tbody = document.getElementById('logTableBody'); 
@@ -2182,7 +2199,7 @@ const URL_WEB_APP = '/api';
             }
             
             const fragment = document.createDocumentFragment();
-            const limit = Math.max(1, dataAbsen.length - 300);
+            const limit = Math.max(1, dataAbsen.length - 400);
             for(let i = dataAbsen.length - 1; i >= limit; i--) { 
                 if(!dataAbsen[i] || !dataAbsen[i][0]) continue; 
                 fragment.appendChild(buatBarisLog(dataAbsen[i])); 
@@ -2208,7 +2225,6 @@ const URL_WEB_APP = '/api';
 
             // Baca Kolom G (row[6]) untuk Status & Waktu Pulang
             let rawPulang = (row[6] || '').toString().trim().replace(/^'/, '');
-            // Kompatibilitas data lama jika dulu Pulang masih tertulis di Kolom E
             if (!rawPulang && stLower === 'pulang' && d) {
                 rawPulang = `Pulang (${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')})`;
             }
@@ -2218,7 +2234,10 @@ const URL_WEB_APP = '/api';
             let badgeStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200/60';
             let dotStyle = 'bg-emerald-500';
 
-            if (stLower === 'izin') {
+            if (stLower.includes('terlambat')) {
+                badgeStyle = 'bg-amber-50 text-amber-700 border-amber-200/60';
+                dotStyle = 'bg-amber-500';
+            } else if (stLower === 'izin') {
                 statusMasuk = 'Izin';
                 badgeStyle = 'bg-sky-50 text-sky-700 border-sky-200/60';
                 dotStyle = 'bg-sky-500';
@@ -2279,14 +2298,17 @@ const URL_WEB_APP = '/api';
                 const matchSearch = tr.getAttribute('data-nama').includes(search) || tr.getAttribute('data-nis').includes(search);
                 const matchKelas = kelas === 'Semua' || (kelas === 'Guru' ? tr.getAttribute('data-tipe') === 'Guru' : tr.getAttribute('data-kelas') === kelas);
                 const matchTanggal = !tanggal || tr.getAttribute('data-tanggal') === tanggal;
+                const rowStatus = tr.getAttribute('data-status').toLowerCase();
                 
                 let matchStatus = true;
                 if (status === 'Pulang') {
                     matchStatus = tr.getAttribute('data-pulang') !== '-';
                 } else if (status === 'Belum Pulang') {
-                    matchStatus = tr.getAttribute('data-pulang') === '-' && tr.getAttribute('data-status').toLowerCase() === 'masuk';
+                    matchStatus = tr.getAttribute('data-pulang') === '-' && (rowStatus === 'masuk' || rowStatus.includes('terlambat'));
+                } else if (status === 'Terlambat') {
+                    matchStatus = rowStatus.includes('terlambat');
                 } else if (status !== 'Semua') {
-                    matchStatus = tr.getAttribute('data-status').toLowerCase() === status.toLowerCase();
+                    matchStatus = rowStatus === status.toLowerCase();
                 }
 
                 tr.style.display = (matchSearch && matchKelas && matchTanggal && matchStatus) ? '' : 'none';
@@ -2323,7 +2345,7 @@ const URL_WEB_APP = '/api';
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(dataExport);
-            ws['!cols'] = [{ wch: 6 }, { wch: 22 }, { wch: 32 }, { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 18 }, { wch: 20 }];
+            ws['!cols'] = [{ wch: 6 }, { wch: 22 }, { wch: 32 }, { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 22 }, { wch: 20 }];
             XLSX.utils.book_append_sheet(wb, ws, 'Log_Absensi');
 
             const kelas = document.getElementById('filterKelasLog').value;
@@ -2622,7 +2644,7 @@ const URL_WEB_APP = '/api';
         }
 
         // =========================================================================
-        // GENERATOR REKAPITULASI (MEMBACA MASUK DI KOLOM E & PULANG DI KOLOM G)
+        // GENERATOR REKAPITULASI (MEMBACA MASUK/TERLAMBAT DI KOL E & PULANG DI KOL G)
         // =========================================================================
         function ubahTargetRekap() {
             const target = document.getElementById('rekapTarget').value;
@@ -2686,11 +2708,10 @@ const URL_WEB_APP = '/api';
             };
 
             const updateRecord = (rec, rawStatus, timeStr, valKolomG) => {
-                if (rawStatus === 'masuk') {
+                if (rawStatus === 'masuk' || rawStatus.includes('terlambat')) {
                     if (rec.masuk === '-' || timeStr < rec.masuk) rec.masuk = timeStr;
                     rec.status = 'hadir';
                 } else if (rawStatus === 'pulang') {
-                    // Kompatibilitas baris lama jika Pulang ada di Kolom E
                     if (rec.pulang === '-' || timeStr > rec.pulang) rec.pulang = timeStr;
                     rec.status = 'hadir';
                 } else if (rawStatus === 'izin') {
@@ -3092,22 +3113,41 @@ const URL_WEB_APP = '/api';
             const isGuru = currentRekapResult.isGuru;
             const kelasDipilih = document.getElementById('rekapKelas').value;
 
-            const cetakTabel = (judulLaporan, rowsData, isFirstPage) => {
+            const namaWaliInput = (document.getElementById('rekapNamaWali')?.value || '').trim();
+            const nipWaliInput = (document.getElementById('rekapNipWali')?.value || '').trim();
+
+            const now = new Date();
+            const tglCetakIndo = `${now.getDate()} ${NAMA_BULAN[now.getMonth()]} ${now.getFullYear()}`;
+
+            const cetakTabel = (judulLaporan, rowsData, isFirstPage, namaKelasLabel = '') => {
                 if (!isFirstPage) doc.addPage();
-                doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(30, 41, 59);
-                doc.text(judulLaporan, 14, 14);
-                doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(71, 85, 105);
-                doc.text(currentRekapResult.subJudul, 14, 20);
+                
+                // Kop Laporan Resmi
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(15, 23, 42);
+                doc.text("PEMERINTAH KABUPATEN TANAH BUMBU - DINAS PENDIDIKAN", 14, 12);
+                doc.setFontSize(14);
+                doc.text("SMP NEGERI 1 SATUI", 14, 18);
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(71, 85, 105);
+                doc.text("Jl. Karya Bersama RT. 01 Desa Makmur Jaya, Kec. Satui, Kab. Tanah Bumbu, Kalimantan Selatan | NPSN: 30303610", 14, 22.5);
+                
+                doc.setDrawColor(148, 163, 184); doc.setLineWidth(0.4);
+                doc.line(14, 25, 283, 25);
+
+                // Judul & Subjudul Rekap
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5); doc.setTextColor(30, 41, 59);
+                doc.text(judulLaporan, 14, 31);
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(71, 85, 105);
+                doc.text(currentRekapResult.subJudul, 14, 36);
 
                 const pdfBody = rowsData.map(row => row.map(cell => (cell === '✓' ? 'H' : String(cell).replace(' - ', '\n'))));
                 const isManyCols = currentRekapResult.headers.length > 15;
 
                 doc.autoTable({
-                    startY: 24,
+                    startY: 39,
                     head: [currentRekapResult.headers],
                     body: pdfBody,
                     theme: 'grid',
-                    styles: { fontSize: isManyCols ? 5.8 : 8, cellPadding: isManyCols ? 1 : 2, valign: 'middle', halign: 'center' },
+                    styles: { fontSize: isManyCols ? 5.8 : 7.8, cellPadding: isManyCols ? 1 : 1.8, valign: 'middle', halign: 'center' },
                     headStyles: { fillColor: isGuru ? [147, 51, 234] : [79, 70, 229], textColor: [255, 255, 255], fontStyle: 'bold' },
                     columnStyles: {
                         0: { cellWidth: isManyCols ? 6 : 9 },
@@ -3125,18 +3165,63 @@ const URL_WEB_APP = '/api';
                         }
                     }
                 });
+
+                // Blok Pengesahan / Tanda Tangan Resmi
+                let finalY = doc.lastAutoTable.finalY + 8;
+                if (finalY + 36 > 200) {
+                    doc.addPage();
+                    finalY = 20;
+                }
+
+                const leftX = 35;
+                const rightX = 205;
+
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(30, 41, 59);
+                doc.text("Mengetahui,", leftX, finalY);
+                doc.text(`Satui, ${tglCetakIndo}`, rightX, finalY);
+
+                doc.setFont('helvetica', 'bold');
+                doc.text("Kepala SMP Negeri 1 Satui", leftX, finalY + 5);
+                
+                const jabatanKanan = isGuru 
+                    ? "Koordinator Administrasi / Piket" 
+                    : (namaKelasLabel && namaKelasLabel !== 'Semua' ? `Wali Kelas ${namaKelasLabel}` : "Koordinator Presensi / Wali Kelas");
+                doc.text(jabatanKanan, rightX, finalY + 5);
+
+                const signY = finalY + 27;
+                // Kepala Sekolah
+                doc.setFont('helvetica', 'bold');
+                doc.text("Sumarna, S.Pd.", leftX, signY);
+                doc.setLineWidth(0.3); doc.setDrawColor(30, 41, 59);
+                doc.line(leftX, signY + 1, leftX + 42, signY + 1);
+
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+                doc.text("NIP. 196802041993031013", leftX, signY + 5.5);
+
+                // Wali Kelas / Koordinator
+                if (namaWaliInput) {
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5);
+                    doc.text(namaWaliInput, rightX, signY);
+                    doc.line(rightX, signY + 1, rightX + Math.max(45, namaWaliInput.length * 2.1), signY + 1);
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+                    doc.text(`NIP. ${nipWaliInput || '-'}`, rightX, signY + 5.5);
+                } else {
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+                    doc.text("......................................................", rightX, signY);
+                    doc.text("NIP. ..............................................", rightX, signY + 5.5);
+                }
             };
 
             if (!isGuru && kelasDipilih === 'Semua' && Object.keys(currentRekapResult.perKelasData).length > 1) {
                 Object.keys(currentRekapResult.perKelasData).sort((a, b) => a.localeCompare(b, 'id', { numeric: true })).forEach((kls, idx) => {
-                    cetakTabel(currentRekapResult.judul.replace('SEMUA KELAS', 'KELAS ' + kls), currentRekapResult.perKelasData[kls], idx === 0);
+                    cetakTabel(currentRekapResult.judul.replace('SEMUA KELAS', 'KELAS ' + kls), currentRekapResult.perKelasData[kls], idx === 0, kls);
                 });
             } else {
-                cetakTabel(currentRekapResult.judul, currentRekapResult.rows, true);
+                cetakTabel(currentRekapResult.judul, currentRekapResult.rows, true, kelasDipilih);
             }
 
             doc.save(currentRekapResult.namaFile.replace(/[^a-zA-Z0-9_-]/g, '_') + '.pdf');
-            showToast('Dokumen PDF Rekapitulasi berhasil dicetak.', 'success');
+            showToast('Dokumen PDF Rekapitulasi lengkap dengan pengesahan berhasil dicetak.', 'success');
         }
 
         function renderTableSiswa(dataSiswa) {
@@ -3414,7 +3499,7 @@ const URL_WEB_APP = '/api';
 
                 if(dKey === todayKey) {
                     if (tipeUser === 'Guru') {
-                        if (statusRow === 'masuk' || statusRow === 'pulang' || statusRow === 'hadir' || sudahPulangG) {
+                        if (statusRow === 'masuk' || statusRow.includes('terlambat') || statusRow === 'pulang' || statusRow === 'hadir' || sudahPulangG) {
                             guruHadirUnikHariIni.add(idUnik);
                         }
                         if (sudahPulangG || statusRow === 'pulang') {
@@ -3554,63 +3639,63 @@ const URL_WEB_APP = '/api';
             }});
         });
         
-async function simpanKeDatabase() {
-    const btn = document.getElementById('btnSave'); 
-    const originalHTML = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...'; 
-    btn.disabled = true;
+        async function simpanKeDatabase() {
+            const btn = document.getElementById('btnSave'); 
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...'; 
+            btn.disabled = true;
 
-    try {
-        if (globalSiswaList.length > 0) {
-            const resSiswa = await fetch(URL_WEB_APP, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ aksi: 'import_siswa', siswaList: globalSiswaList }) 
-            });
-            const textRes = await resSiswa.text();
-            let dataSiswa;
             try {
-                dataSiswa = JSON.parse(textRes);
-            } catch (e) {
-                throw new Error("Respon server bukan JSON: " + textRes.substring(0, 100));
-            }
-            if (!resSiswa.ok || dataSiswa.status !== 'success') {
-                throw new Error(dataSiswa.message || 'Gagal menyimpan data siswa.');
-            }
-            globalSiswaList = [];
-        }
+                if (globalSiswaList.length > 0) {
+                    const resSiswa = await fetch(URL_WEB_APP, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ aksi: 'import_siswa', siswaList: globalSiswaList }) 
+                    });
+                    const textRes = await resSiswa.text();
+                    let dataSiswa;
+                    try {
+                        dataSiswa = JSON.parse(textRes);
+                    } catch (e) {
+                        throw new Error("Respon server bukan JSON: " + textRes.substring(0, 100));
+                    }
+                    if (!resSiswa.ok || dataSiswa.status !== 'success') {
+                        throw new Error(dataSiswa.message || 'Gagal menyimpan data siswa.');
+                    }
+                    globalSiswaList = [];
+                }
 
-        if (globalGuruList.length > 0) {
-            const resGuru = await fetch(URL_WEB_APP, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ aksi: 'import_guru', guruList: globalGuruList }) 
-            });
-            const textResG = await resGuru.text();
-            let dataGuru;
-            try {
-                dataGuru = JSON.parse(textResG);
-            } catch (e) {
-                throw new Error("Respon server bukan JSON: " + textResG.substring(0, 100));
-            }
-            if (!resGuru.ok || dataGuru.status !== 'success') {
-                throw new Error(dataGuru.message || 'Gagal menyimpan data guru.');
-            }
-            globalGuruList = [];
-        }
+                if (globalGuruList.length > 0) {
+                    const resGuru = await fetch(URL_WEB_APP, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ aksi: 'import_guru', guruList: globalGuruList }) 
+                    });
+                    const textResG = await resGuru.text();
+                    let dataGuru;
+                    try {
+                        dataGuru = JSON.parse(textResG);
+                    } catch (e) {
+                        throw new Error("Respon server bukan JSON: " + textResG.substring(0, 100));
+                    }
+                    if (!resGuru.ok || dataGuru.status !== 'success') {
+                        throw new Error(dataGuru.message || 'Gagal menyimpan data guru.');
+                    }
+                    globalGuruList = [];
+                }
 
-        showToast('Berhasil menyimpan seluruh antrean ke database Supabase!', 'success');
-        updatePendingSaveBadge();
-        refreshData();
-    } catch (err) {
-        showToast('Gagal menyimpan: ' + err.message, 'error');
-        console.error("Detail Error Simpan Antrean:", err);
-    } finally { 
-        btn.innerHTML = originalHTML; 
-        btn.disabled = false; 
-        updatePendingSaveBadge(); 
-    }
-}
+                showToast('Berhasil menyimpan seluruh antrean ke database Supabase!', 'success');
+                updatePendingSaveBadge();
+                refreshData();
+            } catch (err) {
+                showToast('Gagal menyimpan: ' + err.message, 'error');
+                console.error("Detail Error Simpan Antrean:", err);
+            } finally { 
+                btn.innerHTML = originalHTML; 
+                btn.disabled = false; 
+                updatePendingSaveBadge(); 
+            }
+        }
     </script>
 </body>
 </html>
