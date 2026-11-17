@@ -22,7 +22,7 @@ export async function onRequest(context) {
         }), { status: 500, headers: corsHeaders });
     }
 
-    // Helper REST API Supabase (Ditingkatkan hingga 5.000 baris)
+    // Helper REST API Supabase (Maks 5.000 baris)
     async function sbFetch(endpoint, options = {}) {
         const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
         const headers = {
@@ -52,6 +52,9 @@ export async function onRequest(context) {
         const min = String(now.getMinutes()).padStart(2, "0");
         const ss = String(now.getSeconds()).padStart(2, "0");
         return {
+            dateObj: now,
+            dayOfWeek: now.getDay(), // 0: Minggu, 1-4: Sen-Kam, 5: Jumat, 6: Sabtu
+            totalMinutes: now.getHours() * 60 + now.getMinutes(),
             waktuFormatted: `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`,
             tanggalISO: `${yyyy}-${mm}-${dd}`,
             tanggalPrefix: `${dd}/${mm}/${yyyy}`,
@@ -59,11 +62,10 @@ export async function onRequest(context) {
         };
     }
 
-    // Helper Konversi Waktu Baris Log (Anti-Null untuk Data Scanner)
+    // Helper Konversi Waktu Baris Log
     function formatWaktuLog(row) {
         if (row.waktu && String(row.waktu).trim() !== "") {
             const w = String(row.waktu).trim();
-            // Jika formatnya YYYY-MM-DD HH:mm:ss, ubah ke DD/MM/YYYY HH:mm:ss
             const isoMatch = w.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}:\d{2}:\d{2})/);
             if (isoMatch) {
                 return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]} ${isoMatch[4]}`;
@@ -103,7 +105,7 @@ export async function onRequest(context) {
         }
         const aksi = body.aksi || body.action || "get_data";
 
-        // 1. AMBIL SEMUA DATA (MENGAMBIL DATA TERBARU TERLEBIH DAHULU AGAR TIDAK TERPOTONG LIMIT 1000)
+        // 1. AMBIL SEMUA DATA
         if (aksi === "get_data") {
             const [siswaData, guruData, absenDataDesc] = await Promise.all([
                 sbFetch("siswa?select=nis,nama,kelas&order=kelas.asc,nama.asc"),
@@ -111,7 +113,6 @@ export async function onRequest(context) {
                 sbFetch("log_absen?select=*&order=id.desc&limit=5000")
             ]);
 
-            // Balik urutan agar dari terlama ke terbaru (sesuai pembacaan tabel & grafik di index.html)
             const absenData = (absenDataDesc || []).reverse();
 
             return new Response(JSON.stringify({
@@ -166,18 +167,41 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ status: "success", message: `${list.length} guru berhasil disimpan ke Supabase.` }), { headers: corsHeaders });
         }
 
-        // 4. ABSEN MANUAL & SCAN QR/RFID
+        // 4. ABSEN MANUAL & SCAN QR/RFID (DENGAN LOGIKA TERLAMBAT & JAM PULANG)
         if (aksi === "absen_manual" || aksi === "scan" || aksi === "absen" || aksi === "catat_absen") {
             const wita = getWitaNow();
+            const isManualAdmin = (aksi === "absen_manual");
             const nis = String(body.nis || body.nis_nip || body.id || "").trim();
             let nama = String(body.nama || "").trim();
-            const status = String(body.status || body.mode || "Masuk").trim();
+            let reqStatus = String(body.status || body.mode || "").trim();
+
             const timestamp = String(body.timestamp || body.waktu || wita.waktuFormatted).trim();
             const tglPrefix = timestamp.split(" ")[0];
             const jamPart = (timestamp.split(" ")[1] || wita.jamMenit).substring(0, 5);
             const [dd, mm, yyyy] = tglPrefix.split("/");
             const tanggalISO = (yyyy && mm && dd) ? `${yyyy}-${mm}-${dd}` : wita.tanggalISO;
 
+            // Hitung menit waktu pencatatan & hari dalam minggu
+            const [jamH, jamM] = jamPart.split(":").map(n => parseInt(n, 10) || 0);
+            const scanMinutes = jamH * 60 + jamM;
+            const targetDateObj = (yyyy && mm && dd) ? new Date(parseInt(yyyy, 10), parseInt(mm, 10) - 1, parseInt(dd, 10)) : wita.dateObj;
+            const dayOfWeek = targetDateObj.getDay(); // 0: Minggu, 1-4: Sen-Kam, 5: Jumat, 6: Sabtu
+
+            // Aturan Batas Jam Masuk (07:25 WITA = 445 menit)
+            const BATAS_MASUK_MENIT = 7 * 60 + 25;
+
+            // Aturan Batas Jam Pulang: Jumat 11:00 (660), Senin-Kamis 14:30 (870), Sabtu 12:00 (720)
+            let batasPulangMenit = 14 * 60 + 30;
+            let labelJamPulang = "14:30";
+            if (dayOfWeek === 5) {
+                batasPulangMenit = 11 * 60;
+                labelJamPulang = "11:00";
+            } else if (dayOfWeek === 6) {
+                batasPulangMenit = 12 * 60;
+                labelJamPulang = "12:00";
+            }
+
+            // Cari Data Peserta (Siswa / Guru)
             let kelas = body.kelas || "-", tipe = body.tipe || "Siswa";
             const s = await sbFetch(`siswa?nis=eq.${encodeURIComponent(nis)}&select=nama,kelas`);
             if (s.length > 0) {
@@ -192,11 +216,56 @@ export async function onRequest(context) {
                 }
             }
 
+            // Cek apakah sudah ada catatan absen pada tanggal tersebut
             const existing = await sbFetch(
                 `log_absen?nis_nip=eq.${encodeURIComponent(nis)}&or=(waktu.like.${encodeURIComponent(tglPrefix)}*,tanggal.eq.${encodeURIComponent(tanggalISO)})&select=*&order=id.desc&limit=1`
             );
 
-            if (status === "Pulang") {
+            // A. JIKA AKSI RESET PULANG DARI ADMIN
+            if (reqStatus === "Reset_Pulang") {
+                if (existing.length > 0) {
+                    await sbFetch(`log_absen?id=eq.${existing[0].id}`, {
+                        method: "PATCH",
+                        body: JSON.stringify({ pulang: "" })
+                    });
+                }
+                return new Response(JSON.stringify({ status: "success", message: `Status Pulang untuk ${nama} berhasil di-reset!` }), { headers: corsHeaders });
+            }
+
+            // B. JIKA AKSI IZIN ATAU SAKIT
+            if (reqStatus === "Izin" || reqStatus === "Sakit") {
+                if (existing.length > 0) {
+                    await sbFetch(`log_absen?id=eq.${existing[0].id}`, {
+                        method: "PATCH",
+                        body: JSON.stringify({ waktu: timestamp, status: reqStatus })
+                    });
+                } else {
+                    await sbFetch("log_absen", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            waktu: timestamp, tanggal: tanggalISO, nama, nis_nip: nis, kelas, status: reqStatus, tipe, pulang: ""
+                        })
+                    });
+                }
+                return new Response(JSON.stringify({ status: "success", message: `Presensi ${reqStatus} untuk ${nama} berhasil disimpan!` }), { headers: corsHeaders });
+            }
+
+            // C. PENENTUAN OTOMATIS MASUK vs PULANG & PROTEKSI JAM PULANG
+            let isPulangAction = (reqStatus === "Pulang");
+            if (!isManualAdmin && existing.length > 0 && (!reqStatus || reqStatus === "Masuk")) {
+                // Jika sudah absen masuk hari ini dan melakukan scan kedua kali di alat scanner
+                isPulangAction = true;
+            }
+
+            if (isPulangAction) {
+                // Proteksi jam pulang (hanya berlaku untuk scan non-admin atau jika belum waktunya pulang)
+                if (!isManualAdmin && scanMinutes < batasPulangMenit) {
+                    return new Response(JSON.stringify({
+                        status: "warning",
+                        message: `Halo ${nama}, Anda sudah tercatat hadir hari ini. Scan Pulang baru dibuka pukul ${labelJamPulang} WITA.`
+                    }), { headers: corsHeaders });
+                }
+
                 if (existing.length > 0) {
                     await sbFetch(`log_absen?id=eq.${existing[0].id}`, {
                         method: "PATCH",
@@ -213,31 +282,28 @@ export async function onRequest(context) {
                 return new Response(JSON.stringify({ status: "success", message: `Status Pulang (${jamPart}) untuk ${nama} berhasil disimpan!` }), { headers: corsHeaders });
             }
 
-            if (status === "Reset_Pulang") {
-                if (existing.length > 0) {
-                    await sbFetch(`log_absen?id=eq.${existing[0].id}`, {
-                        method: "PATCH",
-                        body: JSON.stringify({ pulang: "" })
-                    });
-                }
-                return new Response(JSON.stringify({ status: "success", message: `Status Pulang untuk ${nama} berhasil di-reset!` }), { headers: corsHeaders });
+            // D. PENCATATAN KEHADIRAN MASUK & DETEKSI TERLAMBAT (> 07:25 WITA)
+            let finalStatusMasuk = "Masuk";
+            if (scanMinutes > BATAS_MASUK_MENIT) {
+                const selisihMenit = scanMinutes - BATAS_MASUK_MENIT;
+                finalStatusMasuk = `Terlambat (+${selisihMenit} mnt)`;
             }
 
             if (existing.length > 0) {
                 await sbFetch(`log_absen?id=eq.${existing[0].id}`, {
                     method: "PATCH",
-                    body: JSON.stringify({ waktu: timestamp, status: status })
+                    body: JSON.stringify({ waktu: timestamp, status: finalStatusMasuk })
                 });
             } else {
                 await sbFetch("log_absen", {
                     method: "POST",
                     body: JSON.stringify({
-                        waktu: timestamp, tanggal: tanggalISO, nama, nis_nip: nis, kelas, status: status, tipe, pulang: ""
+                        waktu: timestamp, tanggal: tanggalISO, nama, nis_nip: nis, kelas, status: finalStatusMasuk, tipe, pulang: ""
                     })
                 });
             }
 
-            return new Response(JSON.stringify({ status: "success", message: `Presensi ${status} untuk ${nama} berhasil disimpan!` }), { headers: corsHeaders });
+            return new Response(JSON.stringify({ status: "success", message: `Presensi ${finalStatusMasuk} untuk ${nama} berhasil disimpan!` }), { headers: corsHeaders });
         }
 
         // 5. AKSI HAPUS DATA SISWA & GURU
