@@ -22,13 +22,15 @@ export async function onRequest(context) {
         }), { status: 500, headers: corsHeaders });
     }
 
-    // Helper REST API Supabase
+    // Helper REST API Supabase (Ditingkatkan hingga 5.000 baris)
     async function sbFetch(endpoint, options = {}) {
         const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
         const headers = {
             "apikey": SUPABASE_KEY,
             "Authorization": `Bearer ${SUPABASE_KEY}`,
             "Content-Type": "application/json",
+            "Range-Unit": "items",
+            "Range": "0-4999",
             ...(options.headers || {})
         };
         const res = await fetch(url, { ...options, headers });
@@ -60,7 +62,13 @@ export async function onRequest(context) {
     // Helper Konversi Waktu Baris Log (Anti-Null untuk Data Scanner)
     function formatWaktuLog(row) {
         if (row.waktu && String(row.waktu).trim() !== "") {
-            return String(row.waktu).trim();
+            const w = String(row.waktu).trim();
+            // Jika formatnya YYYY-MM-DD HH:mm:ss, ubah ke DD/MM/YYYY HH:mm:ss
+            const isoMatch = w.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}:\d{2}:\d{2})/);
+            if (isoMatch) {
+                return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]} ${isoMatch[4]}`;
+            }
+            return w;
         }
         if (row.created_at) {
             const d = new Date(new Date(row.created_at).toLocaleString("en-US", { timeZone: "Asia/Makassar" }));
@@ -95,13 +103,16 @@ export async function onRequest(context) {
         }
         const aksi = body.aksi || body.action || "get_data";
 
-        // 1. AMBIL SEMUA DATA (DENGAN FALLBACK KOLOM WAKTU & TANGGAL)
+        // 1. AMBIL SEMUA DATA (MENGAMBIL DATA TERBARU TERLEBIH DAHULU AGAR TIDAK TERPOTONG LIMIT 1000)
         if (aksi === "get_data") {
-            const [siswaData, guruData, absenData] = await Promise.all([
+            const [siswaData, guruData, absenDataDesc] = await Promise.all([
                 sbFetch("siswa?select=nis,nama,kelas&order=kelas.asc,nama.asc"),
                 sbFetch("guru?select=nip,nama,rfid&order=nama.asc"),
-                sbFetch("log_absen?select=*&order=id.asc")
+                sbFetch("log_absen?select=*&order=id.desc&limit=5000")
             ]);
+
+            // Balik urutan agar dari terlama ke terbaru (sesuai pembacaan tabel & grafik di index.html)
+            const absenData = (absenDataDesc || []).reverse();
 
             return new Response(JSON.stringify({
                 status: "success",
@@ -155,24 +166,30 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ status: "success", message: `${list.length} guru berhasil disimpan ke Supabase.` }), { headers: corsHeaders });
         }
 
-        // 4. ABSEN MANUAL
-        if (aksi === "absen_manual") {
-            const nis = String(body.nis || "").trim();
-            const nama = String(body.nama || "").trim();
-            const status = String(body.status || "Izin").trim();
-            const timestamp = String(body.timestamp || getWitaNow().waktuFormatted).trim();
+        // 4. ABSEN MANUAL & SCAN QR/RFID
+        if (aksi === "absen_manual" || aksi === "scan" || aksi === "absen" || aksi === "catat_absen") {
+            const wita = getWitaNow();
+            const nis = String(body.nis || body.nis_nip || body.id || "").trim();
+            let nama = String(body.nama || "").trim();
+            const status = String(body.status || body.mode || "Masuk").trim();
+            const timestamp = String(body.timestamp || body.waktu || wita.waktuFormatted).trim();
             const tglPrefix = timestamp.split(" ")[0];
-            const jamPart = (timestamp.split(" ")[1] || "07:00:00").substring(0, 5);
+            const jamPart = (timestamp.split(" ")[1] || wita.jamMenit).substring(0, 5);
             const [dd, mm, yyyy] = tglPrefix.split("/");
-            const tanggalISO = `${yyyy}-${mm}-${dd}`;
+            const tanggalISO = (yyyy && mm && dd) ? `${yyyy}-${mm}-${dd}` : wita.tanggalISO;
 
-            let kelas = "-", tipe = "Siswa";
-            const s = await sbFetch(`siswa?nis=eq.${encodeURIComponent(nis)}&select=kelas`);
+            let kelas = body.kelas || "-", tipe = body.tipe || "Siswa";
+            const s = await sbFetch(`siswa?nis=eq.${encodeURIComponent(nis)}&select=nama,kelas`);
             if (s.length > 0) {
                 kelas = s[0].kelas;
+                if (!nama) nama = s[0].nama;
             } else {
-                const g = await sbFetch(`guru?nip=eq.${encodeURIComponent(nis)}&select=nip`);
-                if (g.length > 0) { kelas = "Guru"; tipe = "Guru"; }
+                const g = await sbFetch(`guru?or=(nip.eq.${encodeURIComponent(nis)},rfid.eq.${encodeURIComponent(nis)})&select=nip,nama`);
+                if (g.length > 0) {
+                    kelas = "Guru";
+                    tipe = "Guru";
+                    if (!nama) nama = g[0].nama;
+                }
             }
 
             const existing = await sbFetch(
