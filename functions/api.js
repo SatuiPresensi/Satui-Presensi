@@ -417,21 +417,53 @@ export async function onRequest(context) {
         }
 
         // C. Simpan Rilis Versi Baru dari Admin Dashboard
-        if (aksi === "save_app_version") {
-            const payload = {
-                version_code: parseInt(body.version_code, 10) || 1,
-                version_name: String(body.version_name || "1.0.0").trim(),
-                apk_url: String(body.apk_url || "").trim(),
-                release_notes: String(body.release_notes || "").trim(),
-                force_update: Boolean(body.force_update),
-                updated_at: new Date().toISOString()
+         if (aksi === "check_version" || request.method === "GET") {
+            const verData = await sbFetch(
+                "app_version?select=*&order=version_code.desc&limit=1"
+            );
+            const latest = verData[0] || {
+                version_code: 1,
+                version_name: "1.0.0",
+                apk_url: "",
+                changelog: "Versi awal rilis.",
+                force_update: false
             };
-            await sbFetch("app_version", {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
+
             return new Response(JSON.stringify({
                 status: "success",
-                message: `Rilis APK v${payload.version_name} (Code: ${payload.version_code}) berhasil dipublikasikan!`
+                version_code: Number(latest.version_code),
+                version_name: latest.version_name,
+                apk_url: latest.apk_url,
+                release_notes: latest.changelog || latest.release_notes || "",
+                force_update: Boolean(latest.force_update)
+            }), { headers: corsHeaders });
+        }
+
+        if (aksi === "save_app_version") {
+            const versionCode = Number(body.version_code);
+            const versionName = String(body.version_name || "").trim();
+            const apkUrl = String(body.apk_url || "").trim();
+
+            if (!Number.isSafeInteger(versionCode) || versionCode < 1 || !versionName || !apkUrl) {
+                return new Response(JSON.stringify({
+                    status: "error",
+                    message: "Version Code, Version Name, dan URL APK wajib valid."
+                }), { status: 400, headers: corsHeaders });
+            }
+
+            await sbFetch("app_version", {
+                method: "POST",
+                body: JSON.stringify({
+                    version_code: versionCode,
+                    version_name: versionName,
+                    apk_url: apkUrl,
+                    changelog: String(body.release_notes || "").trim(),
+                    force_update: Boolean(body.force_update)
+                })
+            });
+
+            return new Response(JSON.stringify({
+                status: "success",
+                message: `Rilis APK v${versionName} berhasil dipublikasikan!`
             }), { headers: corsHeaders });
         }
