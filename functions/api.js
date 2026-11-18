@@ -382,3 +382,56 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ status: "error", message: err.message }), { status: 500, headers: corsHeaders });
     }
 }
+
+// 7. MANAJEMEN VERSI APK & AUTO-UPDATE ANDROID
+        // A. Mendapatkan Konfigurasi Upload Langsung ke Supabase Storage
+        if (aksi === "get_upload_config") {
+            return new Response(JSON.stringify({
+                status: "success",
+                supabaseUrl: SUPABASE_URL,
+                supabaseKey: SUPABASE_KEY
+            }), { headers: corsHeaders });
+        }
+
+        // B. Cek Versi Terbaru (Dipanggil oleh Android App & Dashboard Admin)
+        if (aksi === "check_version" || request.method === "GET") {
+            const verData = await sbFetch("app_version?select=*&order=version_code.desc,id.desc&limit=1");
+            const latest = verData.length > 0 ? verData[0] : {
+                version_code: 1,
+                version_name: "1.0.0",
+                apk_url: "",
+                release_notes: "Versi awal rilis.",
+                force_update: false,
+                updated_at: new Date().toISOString()
+            };
+            return new Response(JSON.stringify({
+                status: "success",
+                version_code: Number(latest.version_code),
+                version_name: latest.version_name,
+                apk_url: latest.apk_url,
+                release_notes: latest.release_notes,
+                force_update: Boolean(latest.force_update),
+                updated_at: latest.updated_at,
+                history: verData
+            }), { headers: corsHeaders });
+        }
+
+        // C. Simpan Rilis Versi Baru dari Admin Dashboard
+        if (aksi === "save_app_version") {
+            const payload = {
+                version_code: parseInt(body.version_code, 10) || 1,
+                version_name: String(body.version_name || "1.0.0").trim(),
+                apk_url: String(body.apk_url || "").trim(),
+                release_notes: String(body.release_notes || "").trim(),
+                force_update: Boolean(body.force_update),
+                updated_at: new Date().toISOString()
+            };
+            await sbFetch("app_version", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+            return new Response(JSON.stringify({
+                status: "success",
+                message: `Rilis APK v${payload.version_name} (Code: ${payload.version_code}) berhasil dipublikasikan!`
+            }), { headers: corsHeaders });
+        }
