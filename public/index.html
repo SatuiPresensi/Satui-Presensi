@@ -2291,30 +2291,31 @@
         // =========================================================================
         // TABEL LOG KEHADIRAN (MEMBACA KOLOM E MASUK/TERLAMBAT & KOLOM G PULANG)
         // =========================================================================
-        function renderLogAbsen(dataAbsen) {
-            const tbody = document.getElementById('logTableBody'); 
-            tbody.innerHTML = '';
-            const totalLog = Math.max(0, (dataAbsen ? dataAbsen.length - 1 : 0));
-            
-            const badgeLog = document.getElementById('badgeCountLog');
-            if (badgeLog) badgeLog.innerText = totalLog;
-            const statTotalLog = document.getElementById('stat-total-log');
-            if (statTotalLog) statTotalLog.innerText = `${totalLog} Data`;
+function renderLogAbsen(dataAbsen) {
+    const tbody = document.getElementById('logTableBody');
+    tbody.innerHTML = '';
+    const totalLog = Math.max(0, (dataAbsen ? dataAbsen.length - 1 : 0));
 
-            if(!dataAbsen || dataAbsen.length <= 1) { 
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400 text-sm">Belum ada riwayat kehadiran tercatat</td></tr>`; 
-                return; 
-            }
-            
-            const fragment = document.createDocumentFragment();
-            const limit = Math.max(1, dataAbsen.length - 400);
-            for(let i = dataAbsen.length - 1; i >= limit; i--) { 
-                if(!dataAbsen[i] || !dataAbsen[i][0]) continue; 
-                fragment.appendChild(buatBarisLog(dataAbsen[i])); 
-            }
-            tbody.appendChild(fragment);
-            filterLogAbsen();
-        }
+    const badgeLog = document.getElementById('badgeCountLog');
+    if (badgeLog) badgeLog.innerText = totalLog;
+    const statTotalLog = document.getElementById('stat-total-log');
+    if (statTotalLog) statTotalLog.innerText = `${totalLog} Data`;
+
+    if (!dataAbsen || dataAbsen.length <= 1) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400 text-sm">Belum ada riwayat kehadiran tercatat</td></tr>`;
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    // Diperbesar dari 400 menjadi 2000 baris log terakhir
+    const limit = Math.max(1, dataAbsen.length - 2000);
+    for (let i = dataAbsen.length - 1; i >= limit; i--) {
+        if (!dataAbsen[i] || !dataAbsen[i][0]) continue;
+        fragment.appendChild(buatBarisLog(dataAbsen[i]));
+    }
+    tbody.appendChild(fragment);
+    filterLogAbsen();
+}
         
         function buatBarisLog(row) {
             const d = parseTanggalAbsen(row[0]);
