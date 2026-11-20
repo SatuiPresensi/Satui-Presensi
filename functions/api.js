@@ -22,7 +22,7 @@ export async function onRequest(context) {
         }), { status: 500, headers: corsHeaders });
     }
 
-    // Helper REST API Supabase (Maks 5.000 baris)
+    // Helper REST API Supabase (Disesuaikan dengan Max Rows Supabase)
     async function sbFetch(endpoint, options = {}) {
         const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
         const headers = {
@@ -30,7 +30,7 @@ export async function onRequest(context) {
             "Authorization": `Bearer ${SUPABASE_KEY}`,
             "Content-Type": "application/json",
             "Range-Unit": "items",
-            "Range": "0-4999",
+            "Range": "0-19999",
             ...(options.headers || {})
         };
         const res = await fetch(url, { ...options, headers });
@@ -62,7 +62,7 @@ export async function onRequest(context) {
         };
     }
 
-    // Helper Konversi Waktu Baris Log
+    // Helper Konversi Waktu Baris Log (Anti-Null untuk Data Scanner)
     function formatWaktuLog(row) {
         if (row.waktu && String(row.waktu).trim() !== "") {
             const w = String(row.waktu).trim();
@@ -105,12 +105,12 @@ export async function onRequest(context) {
         }
         const aksi = body.aksi || body.action || "get_data";
 
-        // 1. AMBIL SEMUA DATA
+        // 1. AMBIL SEMUA DATA (TERBARU TERLEBIH DAHULU)
         if (aksi === "get_data") {
             const [siswaData, guruData, absenDataDesc] = await Promise.all([
                 sbFetch("siswa?select=nis,nama,kelas&order=kelas.asc,nama.asc"),
                 sbFetch("guru?select=nip,nama,rfid&order=nama.asc"),
-                sbFetch("log_absen?select=*&order=id.desc&limit=5000")
+                sbFetch("log_absen?select=*&order=id.desc&limit=10000")
             ]);
 
             const absenData = (absenDataDesc || []).reverse();
@@ -181,7 +181,6 @@ export async function onRequest(context) {
             const [dd, mm, yyyy] = tglPrefix.split("/");
             const tanggalISO = (yyyy && mm && dd) ? `${yyyy}-${mm}-${dd}` : wita.tanggalISO;
 
-            // Hitung menit waktu pencatatan & hari dalam minggu
             const [jamH, jamM] = jamPart.split(":").map(n => parseInt(n, 10) || 0);
             const scanMinutes = jamH * 60 + jamM;
             const targetDateObj = (yyyy && mm && dd) ? new Date(parseInt(yyyy, 10), parseInt(mm, 10) - 1, parseInt(dd, 10)) : wita.dateObj;
@@ -190,7 +189,7 @@ export async function onRequest(context) {
             // Aturan Batas Jam Masuk (07:25 WITA = 445 menit)
             const BATAS_MASUK_MENIT = 7 * 60 + 25;
 
-            // Aturan Batas Jam Pulang: Jumat 11:00 (660), Senin-Kamis 14:30 (870), Sabtu 12:00 (720)
+            // Aturan Batas Jam Pulang: Senin-Kamis 14:30 (870), Jumat 11:00 (660), Sabtu 12:00 (720)
             let batasPulangMenit = 14 * 60 + 30;
             let labelJamPulang = "14:30";
             if (dayOfWeek === 5) {
@@ -201,7 +200,6 @@ export async function onRequest(context) {
                 labelJamPulang = "12:00";
             }
 
-            // Cari Data Peserta (Siswa / Guru)
             let kelas = body.kelas || "-", tipe = body.tipe || "Siswa";
             const s = await sbFetch(`siswa?nis=eq.${encodeURIComponent(nis)}&select=nama,kelas`);
             if (s.length > 0) {
@@ -216,12 +214,11 @@ export async function onRequest(context) {
                 }
             }
 
-            // Cek apakah sudah ada catatan absen pada tanggal tersebut
             const existing = await sbFetch(
                 `log_absen?nis_nip=eq.${encodeURIComponent(nis)}&or=(waktu.like.${encodeURIComponent(tglPrefix)}*,tanggal.eq.${encodeURIComponent(tanggalISO)})&select=*&order=id.desc&limit=1`
             );
 
-            // A. JIKA AKSI RESET PULANG DARI ADMIN
+            // A. RESET PULANG DARI ADMIN
             if (reqStatus === "Reset_Pulang") {
                 if (existing.length > 0) {
                     await sbFetch(`log_absen?id=eq.${existing[0].id}`, {
@@ -232,7 +229,7 @@ export async function onRequest(context) {
                 return new Response(JSON.stringify({ status: "success", message: `Status Pulang untuk ${nama} berhasil di-reset!` }), { headers: corsHeaders });
             }
 
-            // B. JIKA AKSI IZIN ATAU SAKIT
+            // B. IZIN ATAU SAKIT
             if (reqStatus === "Izin" || reqStatus === "Sakit") {
                 if (existing.length > 0) {
                     await sbFetch(`log_absen?id=eq.${existing[0].id}`, {
@@ -253,12 +250,10 @@ export async function onRequest(context) {
             // C. PENENTUAN OTOMATIS MASUK vs PULANG & PROTEKSI JAM PULANG
             let isPulangAction = (reqStatus === "Pulang");
             if (!isManualAdmin && existing.length > 0 && (!reqStatus || reqStatus === "Masuk")) {
-                // Jika sudah absen masuk hari ini dan melakukan scan kedua kali di alat scanner
                 isPulangAction = true;
             }
 
             if (isPulangAction) {
-                // Proteksi jam pulang (hanya berlaku untuk scan non-admin atau jika belum waktunya pulang)
                 if (!isManualAdmin && scanMinutes < batasPulangMenit) {
                     return new Response(JSON.stringify({
                         status: "warning",
@@ -386,7 +381,7 @@ export async function onRequest(context) {
         }
 
         if (aksi === "check_version" || request.method === "GET") {
-            const verData = await sbFetch("app_version?select=*&order=version_code.desc,id.desc&limit=1");
+            const verData = await sbFetch("app_version?select=*&order=version_code.desc,id.desc&limit=10");
             const latest = verData.length > 0 ? verData[0] : {
                 version_code: 1,
                 version_name: "1.0.0",
@@ -395,14 +390,17 @@ export async function onRequest(context) {
                 force_update: false,
                 updated_at: new Date().toISOString()
             };
+            const notesText = latest.changelog || latest.release_notes || "";
             return new Response(JSON.stringify({
                 status: "success",
                 version_code: Number(latest.version_code),
                 version_name: latest.version_name,
                 apk_url: latest.apk_url,
-                release_notes: latest.changelog || latest.release_notes || "",
+                release_notes: notesText,
+                changelog: notesText,
                 force_update: Boolean(latest.force_update),
-                updated_at: latest.updated_at
+                updated_at: latest.updated_at,
+                history: verData
             }), { headers: corsHeaders });
         }
 
@@ -410,6 +408,7 @@ export async function onRequest(context) {
             const versionCode = Number(body.version_code);
             const versionName = String(body.version_name || "").trim();
             const apkUrl = String(body.apk_url || "").trim();
+            const notesVal = String(body.release_notes ?? body.changelog ?? "").trim();
 
             if (!Number.isSafeInteger(versionCode) || versionCode < 1 || !versionName || !apkUrl) {
                 return new Response(JSON.stringify({
@@ -424,7 +423,7 @@ export async function onRequest(context) {
                     version_code: versionCode,
                     version_name: versionName,
                     apk_url: apkUrl,
-                    changelog: String(body.release_notes || "").trim(),
+                    changelog: notesVal,
                     force_update: Boolean(body.force_update)
                 })
             });
